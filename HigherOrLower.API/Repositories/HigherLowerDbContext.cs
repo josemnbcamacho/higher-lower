@@ -6,6 +6,7 @@ namespace HigherOrLower.API.Repository;
 
 public class HigherLowerDbContext : DbContext
 {
+    private const string DfFolderName = "Database";
     private const string DbFileName = "HigherOrLower.db";
 
     private readonly string _dbPath;
@@ -19,7 +20,7 @@ public class HigherLowerDbContext : DbContext
         // should use options to configure the db path
         
         var contentRootPath = Directory.GetCurrentDirectory();
-        _dbPath = Path.Combine(contentRootPath, DbFileName);
+        _dbPath = Path.Combine(contentRootPath, DfFolderName, DbFileName);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)

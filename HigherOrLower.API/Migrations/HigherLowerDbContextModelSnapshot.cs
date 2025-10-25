@@ -15,7 +15,7 @@ namespace HigherOrLower.API.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.2");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
 
             modelBuilder.Entity("HigherOrLower.API.Models.Entities.Deck", b =>
                 {
@@ -29,7 +29,7 @@ namespace HigherOrLower.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Deck");
+                    b.ToTable("Deck", (string)null);
                 });
 
             modelBuilder.Entity("HigherOrLower.API.Models.Entities.HigherOrLowerGame", b =>
@@ -49,7 +49,7 @@ namespace HigherOrLower.API.Migrations
 
                     b.HasIndex("DeckId");
 
-                    b.ToTable("HigherOrLowerGames");
+                    b.ToTable("HigherOrLowerGames", (string)null);
                 });
 
             modelBuilder.Entity("HigherOrLower.API.Models.Entities.Player", b =>
@@ -72,7 +72,7 @@ namespace HigherOrLower.API.Migrations
 
                     b.HasIndex("HigherOrLowerGameId");
 
-                    b.ToTable("Player");
+                    b.ToTable("Player", (string)null);
                 });
 
             modelBuilder.Entity("HigherOrLower.API.Models.Entities.HigherOrLowerGame", b =>

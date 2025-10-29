@@ -24,7 +24,9 @@ public class HigherLowerDbContext : DbContext
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite($"Data Source={_dbPath}");
+        => options.UseSqlite($"Data Source={_dbPath}")
+            .ConfigureWarnings(warnings => 
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

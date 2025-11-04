@@ -1,7 +1,8 @@
 using HigherOrLower.API.DTOs.Response;
-using HigherOrLower.API.Exceptions;
+using HigherOrLower.API.Errors;
 using HigherOrLower.API.Models.Entities;
 using HigherOrLower.API.Repository.Interfaces;
+using OneOf;
 
 namespace HigherOrLower.API.Services;
 
@@ -9,7 +10,7 @@ public class HigherOrLowerGameManager : IHigherOrLowerGameManager
 {
     private const int MinPlayers = 2;
     private const int MaxPlayers = 12;
-    
+
     private readonly IHigherLowerGameRepository _gameRepository;
     private readonly IDeckRepository _deckRepository;
     private readonly IPlayerRepository _playerRepository;
@@ -26,12 +27,12 @@ public class HigherOrLowerGameManager : IHigherOrLowerGameManager
         _playerCreator = playerCreator;
     }
 
-    public async Task<GameStartedResult> StartGameAsync(int numPlayers) 
+    public async Task<OneOf<GameStartedResult, InvalidNumberOfPlayersError>> StartGameAsync(int numPlayers)
     {
         // validate the number of requested players
         if (numPlayers < MinPlayers || numPlayers > MaxPlayers)
         {
-            throw new ArgumentException("Number of players must be between 2 and 12");
+            return new InvalidNumberOfPlayersError();
         }
         
         var shuffledDeck = _deckCreator.CreateShuffledDeck();
@@ -69,35 +70,32 @@ public class HigherOrLowerGameManager : IHigherOrLowerGameManager
         };
     }
 
-    public async Task<TurnResult> PlayTurnAsync(Guid gameId, Guid playerId, Guess guess)
+    public async Task<OneOf<TurnResult, GameNotFoundError, GameEndedError, DeckNotFoundError, NoCardDrawnError, PlayerNotFoundError>> PlayTurnAsync(Guid gameId, Guid playerId, Guess guess)
     {
         // get the game from the repository
         var currentGame = await _gameRepository.GetByIdAsync(gameId);
-        
+
         // check if game exists
         if (currentGame == null)
-            throw new GameNotFoundException("Game not found");
+            return new GameNotFoundError();
 
         // check if game has already ended
         if (currentGame.HasGameEnded)
-            throw new Exception("Game has ended");
+            return new GameEndedError();
 
         // check if deck exists
         if (currentGame.Deck == null)
-            throw new Exception("Deck not found");
-        
+            return new DeckNotFoundError();
+
         // check if a card has been drawn
         if (currentGame.LastCard == null)
-            throw new Exception("No card has been drawn");
-        
+            return new NoCardDrawnError();
+
         // validate if the player is part of the game
         var player = currentGame.Players.FirstOrDefault(p => p.Id == playerId);
-        
+
         if (player == null)
-        {
-            throw new PlayerNotFoundException("Player not found");
-            throw new Exception("Player not found");
-        }
+            return new PlayerNotFoundError();
 
         // get a new card from the deck
         var drawnCard = currentGame.Deck.DrawCard();
@@ -138,15 +136,13 @@ public class HigherOrLowerGameManager : IHigherOrLowerGameManager
         return turnResult;
     }
 
-    public async Task<GameStateResult> GetGameStateAsync(Guid gameId)
+    public async Task<OneOf<GameStateResult, GameNotFoundError>> GetGameStateAsync(Guid gameId)
     {
         // get the game from the repository
         var currentGame = await _gameRepository.GetByIdAsync(gameId);
-        
+
         if (currentGame == null)
-        {
-            throw new Exception("Game not found");
-        }
+            return new GameNotFoundError();
 
         var gameStateResult = new GameStateResult()
         {

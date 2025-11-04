@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using HigherOrLower.API.Exceptions;
+using HigherOrLower.API.Errors;
 using HigherOrLower.API.Models.Entities;
 using HigherOrLower.API.Repository.Interfaces;
 using HigherOrLower.API.Services;
@@ -32,9 +32,10 @@ public class GameManagerTests
         var result = await gameManager.StartGameAsync(numberOfPlayers);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.DrawnCardName);
-        Assert.Equal(numberOfPlayers, result.Players.Count);
+        Assert.True(result.IsT0); // Success case
+        var gameResult = result.AsT0;
+        Assert.NotNull(gameResult.DrawnCardName);
+        Assert.Equal(numberOfPlayers, gameResult.Players.Count);
     }
     
     [Theory]
@@ -42,36 +43,39 @@ public class GameManagerTests
     [InlineData(1)]
     [InlineData(-1)]
     [InlineData(100)]
-    public async Task StartGameAsync_ShouldThrowException(int numberOfPlayers)
+    public async Task StartGameAsync_ShouldReturnError(int numberOfPlayers)
     {
         // Arrange
         _mockGameRepository.Setup(e => e.AddAsync(It.IsAny<HigherOrLowerGame>()));
 
         var gameManager = new HigherOrLowerGameManager(_mockGameRepository.Object, _mockDeckRepository.Object, _mockPlayerRepository.Object, _deckCreator, _playerCreator);
 
-        // Act and Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => gameManager.StartGameAsync(numberOfPlayers));
+        // Act
+        var result = await gameManager.StartGameAsync(numberOfPlayers);
+
+        // Assert
+        Assert.True(result.IsT1); // Error case
+        Assert.IsType<InvalidNumberOfPlayersError>(result.AsT1);
     }
     
     [Fact]
-    public async Task PlayTurnsAsync_InvalidGameId_ShouldThrowException()
+    public async Task PlayTurnsAsync_InvalidGameId_ShouldReturnError()
     {
         // Arrange
-        var gameId = Guid.NewGuid();
-        var deck = _deckCreator.CreateShuffledDeck();
-        var players = new List<Player>();
-
         _mockGameRepository.Setup(e => e.GetByIdAsync(It.IsAny<Guid>()));
 
         var gameManager = new HigherOrLowerGameManager(_mockGameRepository.Object, _mockDeckRepository.Object, _mockPlayerRepository.Object, _deckCreator, _playerCreator);
 
-        // Act and Assert
-        await Assert.ThrowsAsync<GameNotFoundException>(() =>
-            gameManager.PlayTurnAsync(Guid.NewGuid(), Guid.NewGuid(), Guess.Higher));
+        // Act
+        var result = await gameManager.PlayTurnAsync(Guid.NewGuid(), Guid.NewGuid(), Guess.Higher);
+
+        // Assert
+        Assert.True(result.IsT1); // Error case
+        Assert.IsType<GameNotFoundError>(result.AsT1);
     }
     
     [Fact]
-    public async Task PlayTurnsAsync_InvalidPlayerId_ShouldThrowException()
+    public async Task PlayTurnsAsync_InvalidPlayerId_ShouldReturnError()
     {
         // Arrange
         var gameId = Guid.NewGuid();
@@ -85,10 +89,13 @@ public class GameManagerTests
         _mockGameRepository.Setup(e => e.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(higherOrLowerGame);
 
         var gameManager = new HigherOrLowerGameManager(_mockGameRepository.Object, _mockDeckRepository.Object, _mockPlayerRepository.Object, _deckCreator, _playerCreator);
-        
-        // Act and Assert
-        await Assert.ThrowsAsync<PlayerNotFoundException>(() =>
-            gameManager.PlayTurnAsync(gameId, Guid.NewGuid(), Guess.Higher));
+
+        // Act
+        var result = await gameManager.PlayTurnAsync(gameId, Guid.NewGuid(), Guess.Higher);
+
+        // Assert
+        Assert.True(result.IsT5); // PlayerNotFoundError is the 6th type (index 5)
+        Assert.IsType<PlayerNotFoundError>(result.AsT5);
     }
     
     [Fact]
@@ -111,8 +118,9 @@ public class GameManagerTests
         var result = await gameManager.PlayTurnAsync(gameId, player1.Id, Guess.Higher);
 
         // Assert
-        Assert.NotNull(result);
-        Assert.NotNull(result.DrawnCardName);
+        Assert.True(result.IsT0); // Success case
+        var turnResult = result.AsT0;
+        Assert.NotNull(turnResult.DrawnCardName);
     }
 
 }

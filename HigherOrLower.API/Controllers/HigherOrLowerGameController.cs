@@ -2,7 +2,6 @@ using HigherOrLower.API.Controllers.Base;
 using HigherOrLower.API.DTOs.Request;
 using HigherOrLower.API.Services;
 using Microsoft.AspNetCore.Mvc;
-using Nito;
 
 namespace HigherOrLower.API.Controllers;
 
@@ -16,7 +15,7 @@ public class HigherOrLowerGameController : BaseApiController
     {
         _gameManager = gameManager;
     }
-    
+
     /// <summary>
     /// Starts a new game
     /// </summary>
@@ -24,12 +23,14 @@ public class HigherOrLowerGameController : BaseApiController
     [HttpPost]
     public async Task<IActionResult> StartGame([FromBody] StartGameRequest request)
     {
-        var t =
-            await Try.Create(() => _gameManager.StartGameAsync(request.NumberOfPlayers));
+        var result = await _gameManager.StartGameAsync(request.NumberOfPlayers);
 
-        return MatchTryResult(t);
+        return result.Match<IActionResult>(
+            success => Ok(success),
+            error => ToActionResult(error)
+        );
     }
-    
+
     /// <summary>
     /// Plays a guess
     /// </summary>
@@ -37,12 +38,14 @@ public class HigherOrLowerGameController : BaseApiController
     [HttpPost("guess")]
     public async Task<IActionResult> Guess([FromBody] GuessRequest request)
     {
-        var t =
-            await Try.Create(() => _gameManager.PlayTurnAsync(request.GameId, request.PlayerId, request.Guess));
+        var result = await _gameManager.PlayTurnAsync(request.GameId, request.PlayerId, request.Guess);
 
-        return MatchTryResult(t);
+        return result.Match<IActionResult>(
+            success => Ok(success),
+            error => ToActionResult(error)
+        );
     }
-    
+
     /// <summary>
     /// Gets the game state
     /// </summary>
@@ -50,9 +53,11 @@ public class HigherOrLowerGameController : BaseApiController
     [HttpGet("{gameId}")]
     public async Task<IActionResult> GetGameState(Guid gameId)
     {
-        var t =
-            await Try.Create(() => _gameManager.GetGameStateAsync(gameId));
+        var result = await _gameManager.GetGameStateAsync(gameId);
 
-        return MatchTryResult(t);
+        return result.Match<IActionResult>(
+            success => Ok(success),
+            error => ToActionResult(error)
+        );
     }
 }
